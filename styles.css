@@ -1,0 +1,5 @@
+.rem-element-hover {
+  outline: 3px solid red !important;
+  outline-offset: -3px !important;
+  background-color: rgba(255, 0, 0, 0.1) !important;
+}
