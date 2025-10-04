@@ -1,49 +1,85 @@
-let selectionMode = false;
-let currentHovered = null;
+(function () {
+  "use strict";
 
-const IGNORE_TAGS = new Set(["HTML", "BODY"]);
+  const STATE = {
+    active: false,
+    hoveredElement: null,
+    originalCursor: document.body.style.cursor,
+  };
 
-function onMouseOver(e) {
-  if (!selectionMode) return;
+  const CONFIG = {
+    hoverClass: "dcleaner-hover",
+    ignoreTags: new Set(["HTML", "BODY", "HEAD"]),
+  };
 
-  e.preventDefault();
-  e.stopPropagation();
+  function handleInteraction(e) {
+    if (!STATE.active) return;
 
-  if (IGNORE_TAGS.has(e.target.tagName)) return;
+    const isClick = e.type === "click";
+    const target = e.target;
 
-  if (currentHovered) {
-    currentHovered.classList.remove("rem-element-hover");
-  }
+    if (CONFIG.ignoreTags.has(target.tagName)) return;
 
-  currentHovered = e.target;
-  currentHovered.classList.add("rem-element-hover");
-}
+    e.preventDefault();
+    e.stopPropagation();
 
-function onClick(e) {
-  if (!selectionMode) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (IGNORE_TAGS.has(e.target.tagName)) return;
-
-  e.target.remove();
-  currentHovered = null;
-}
-
-browser.runtime.onMessage.addListener((msg) => {
-  if (msg.action === "enable") {
-    selectionMode = true;
-    document.body.style.cursor = "crosshair";
-  } else if (msg.action === "disable") {
-    selectionMode = false;
-    document.body.style.cursor = "";
-    if (currentHovered) {
-      currentHovered.classList.remove("rem-element-hover");
-      currentHovered = null;
+    if (isClick) {
+      removeElement(target);
+    } else {
+      updateHover(target);
     }
   }
-});
 
-document.addEventListener("mouseover", onMouseOver, true);
-document.addEventListener("click", onClick, true);
+  function updateHover(newTarget) {
+    if (STATE.hoveredElement === newTarget) return;
+
+    clearHover();
+    STATE.hoveredElement = newTarget;
+    newTarget.classList.add(CONFIG.hoverClass);
+  }
+
+  function clearHover() {
+    if (STATE.hoveredElement) {
+      STATE.hoveredElement.classList.remove(CONFIG.hoverClass);
+      STATE.hoveredElement = null;
+    }
+  }
+
+  function removeElement(el) {
+    clearHover();
+
+    el.style.transition = "opacity 0.2s";
+    el.style.opacity = "0";
+
+    setTimeout(function () {
+      el.remove();
+    }, 200);
+  }
+
+  function activate() {
+    STATE.active = true;
+    STATE.originalCursor = document.body.style.cursor;
+    document.body.style.cursor = "crosshair";
+    document.addEventListener("mouseover", handleInteraction, true);
+    document.addEventListener("click", handleInteraction, true);
+  }
+
+  function deactivate() {
+    STATE.active = false;
+    document.body.style.cursor = STATE.originalCursor;
+    clearHover();
+
+    document.removeEventListener("mouseover", handleInteraction, true);
+    document.removeEventListener("click", handleInteraction, true);
+  }
+
+  browser.runtime.onMessage.addListener(function (msg) {
+    if (msg.action !== "toggle") return;
+
+    if (msg.enabled) {
+      activate();
+    } else {
+      deactivate();
+    }
+  });
+})();

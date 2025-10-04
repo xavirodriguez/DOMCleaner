@@ -3,9 +3,10 @@
   "name": "DOMCleaner",
   "description": "Remove elements from pages",
   "version": "0.0.1",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "tabs"],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "persistent": false
   },
   "content_scripts": [
     {
@@ -15,7 +16,7 @@
     }
   ],
   "browser_action": {
-    "default_icon": { "64": "icons/icon.png" },
+    "default_icon": { "64": "icons/icon-black.svg" },
     "default_title": "Activar eliminador"
   }
 }
